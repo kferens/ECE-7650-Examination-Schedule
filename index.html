@@ -21,6 +21,15 @@
         .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
     </style>
+    
+    <!-- 1. Add the EmailJS script -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script type="text/javascript">
+        (function() {
+            // REPLACE WITH YOUR EMAILJS PUBLIC KEY
+            emailjs.init("tArVjlhPfhckQj-0B");
+        })();
+    </script>
 </head>
 <body>
 
@@ -53,24 +62,21 @@
 </div>
 
 <script type="module">
-    // Import Firebase modules
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
     import { getFirestore, collection, addDoc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-    // REPLACE THIS ENTIRE CONFIG WITH YOUR KEYS FROM FIREBASE
-const firebaseConfig = {
-  apiKey: "AIzaSyBapsBDIlZssY-uKmAkdLoYM59i_F1LSEo",
-  authDomain: "p1-3-scheduler.firebaseapp.com",
-  projectId: "p1-3-scheduler",
-  storageBucket: "p1-3-scheduler.firebasestorage.app",
-  messagingSenderId: "960255184852",
-  appId: "1:960255184852:web:588e69c355653554781041"
-};
-    // Initialize Firebase
+    // REPLACE WITH YOUR FIREBASE CONFIG
+    const firebaseConfig = {
+      apiKey: "AIzaSyBapsBDIlZssY-uKmAkdLoYM59i_F1LSEo",
+      authDomain: "p1-3-scheduler.firebaseapp.com",
+      projectId: "p1-3-scheduler",
+      storageBucket: "p1-3-scheduler.firebasestorage.app",
+      messagingSenderId: "960255184852",
+      appId: "1:960255184852:web:588e69c355653554781041"
+    };
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Generate all times from 2:30 PM to 5:10 PM (ending at 5:20)
     const allTimes = [
         "2:30 PM", "2:40 PM", "2:50 PM", "3:00 PM", "3:10 PM", "3:20 PM",
         "3:30 PM", "3:40 PM", "3:50 PM", "4:00 PM", "4:10 PM", "4:20 PM",
@@ -84,7 +90,6 @@ const firebaseConfig = {
     const submitBtn = document.getElementById('submitBtn');
     const messageDiv = document.getElementById('message');
 
-    // Real-time listener for booked meetings
     const q = query(collection(db, "meetings"));
     onSnapshot(q, (snapshot) => {
         bookedTimes = [];
@@ -92,9 +97,6 @@ const firebaseConfig = {
             bookedTimes.push(doc.data().time);
         });
         renderTimes();
-    }, (error) => {
-        timesContainer.innerHTML = `<span style="color:red">Error connecting to database. Check Firebase Security Rules (they must be set to allow read/write).</span>`;
-        console.error("Firebase Error:", error);
     });
 
     function renderTimes() {
@@ -125,7 +127,6 @@ const firebaseConfig = {
         });
     }
 
-    // Form validation
     function checkForm() {
         const name = document.getElementById('studentName').value;
         const num = document.getElementById('studentNumber').value;
@@ -137,29 +138,42 @@ const firebaseConfig = {
         input.addEventListener('input', checkForm);
     });
 
-    // Handle Submission
     submitBtn.onclick = async () => {
         submitBtn.disabled = true;
-        submitBtn.innerText = "Booking...";
+        submitBtn.innerText = "Booking and sending email...";
+
+        const name = document.getElementById('studentName').value;
+        const num = document.getElementById('studentNumber').value;
+        const email = document.getElementById('studentEmail').value;
 
         try {
+            // 2. Save to Firebase first
             await addDoc(collection(db, "meetings"), {
-                name: document.getElementById('studentName').value,
-                studentNumber: document.getElementById('studentNumber').value,
-                email: document.getElementById('studentEmail').value,
+                name: name,
+                studentNumber: num,
+                email: email,
                 time: selectedTime,
                 timestamp: new Date()
+            });
+
+            // 3. Trigger EmailJS if save was successful
+            // REPLACE WITH YOUR SERVICE ID AND TEMPLATE ID
+            await emailjs.send("service_x6ack7r", "template_ze6seyh", {
+                to_name: name,
+                to_email: email,
+                meeting_time: selectedTime
             });
 
             document.getElementById('booking-form').style.display = 'none';
             messageDiv.style.display = 'block';
             messageDiv.className = 'success';
-            messageDiv.innerHTML = `<strong>Success!</strong> You are booked for <strong>${selectedTime}</strong>.<br><br><em>(Simulated Email sent to ${document.getElementById('studentEmail').value})</em>`;
+            messageDiv.innerHTML = `<strong>Success!</strong> You are booked for <strong>${selectedTime}</strong>.<br><br>A confirmation email has been sent to ${email}.`;
             
         } catch (e) {
+            console.error(e);
             messageDiv.style.display = 'block';
             messageDiv.className = 'error';
-            messageDiv.innerText = "Error saving booking. Make sure Firebase Security Rules allow writing.";
+            messageDiv.innerText = "There was an error processing your request. Please try again.";
             submitBtn.disabled = false;
             submitBtn.innerText = "Book Meeting";
         }
