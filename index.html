@@ -142,8 +142,14 @@
 
     // Global variables provided by environment
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-scheduler-app';
-    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-    
+	const firebaseConfig = {
+	  apiKey: "AIzaSyBapsBDIlZssY-uKmAkdLoYM59i_F1LSEo",
+	  authDomain: "p1-3-scheduler.firebaseapp.com",
+	  projectId: "p1-3-scheduler",
+	  storageBucket: "p1-3-scheduler.firebasestorage.app",
+	  messagingSenderId: "960255184852",
+	  appId: "1:960255184852:web:588e69c355653554781041"
+	};    
     // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
