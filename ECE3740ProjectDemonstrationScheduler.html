@@ -1,1 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meeting Scheduler - Oct 13</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; background-color: #f4f4f9; }
+        .container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h2 { margin-top: 0; color: #333; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; }
+        input[type="text"], input[type="email"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .times-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; margin-top: 10px; }
+        .time-slot { padding: 10px; text-align: center; border: 1px solid #007bff; border-radius: 4px; cursor: pointer; background: white; color: #007bff; transition: 0.2s; }
+        .time-slot:hover { background: #007bff; color: white; }
+        .time-slot.selected { background: #0056b3; color: white; border-color: #0056b3; }
+        button { margin-top: 20px; width: 100%; padding: 12px; background: #28a745; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        #message { margin-top: 20px; padding: 15px; border-radius: 4px; display: none; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    </style>
+    
+    <!-- 1. Add the EmailJS script -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script type="text/javascript">
+        (function() {
+            // REPLACE WITH YOUR EMAILJS PUBLIC KEY
+            emailjs.init("tArVjlhPfhckQj-0B");
+        })();
+    </script>
+</head>
+<body>
+
+<div class="container">
+    <h2>Book a Meeting - Tuesday, Oct 13</h2>
+    
+    <div id="booking-form">
+        <div class="form-group">
+            <label>Name</label>
+            <input type="text" id="studentName" required>
+        </div>
+        <div class="form-group">
+            <label>Student Number</label>
+            <input type="text" id="studentNumber" required>
+        </div>
+        <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" id="studentEmail" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Select an Available Time (10 min slots):</label>
+            <div id="times-container">Loading schedule...</div>
+        </div>
+
+        <button id="submitBtn" disabled>Book Meeting</button>
+    </div>
+
+    <div id="message"></div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+    // REPLACE WITH YOUR FIREBASE CONFIG
+    const firebaseConfig = {
+      apiKey: "AIzaSyBapsBDIlZssY-uKmAkdLoYM59i_F1LSEo",
+      authDomain: "p1-3-scheduler.firebaseapp.com",
+      projectId: "p1-3-scheduler",
+      storageBucket: "p1-3-scheduler.firebasestorage.app",
+      messagingSenderId: "960255184852",
+      appId: "1:960255184852:web:588e69c355653554781041"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const allTimes = [
+        "8:00 AM", "8:15 AM", "8:30 AM", "8:45 AM", 
+        "9:00 AM", "9:15 AM", "9:30 AM", "9:45 AM",
+        "10:00 AM", "10:15 AM", "10:30 AM", "10:45 AM",
+        "11:00 AM", "11:15 AM", "11:30 AM", "11:45 AM",
+        "12:00 PM"
+    ];
+
+    let bookedTimes = [];
+    let selectedTime = null;
+
+    const timesContainer = document.getElementById('times-container');
+    const submitBtn = document.getElementById('submitBtn');
+    const messageDiv = document.getElementById('message');
+
+    const q = query(collection(db, "meetings"));
+    onSnapshot(q, (snapshot) => {
+        bookedTimes = [];
+        snapshot.forEach((doc) => {
+            bookedTimes.push(doc.data().time);
+        });
+        renderTimes();
+    });
+
+    function renderTimes() {
+        timesContainer.innerHTML = '';
+        timesContainer.className = 'times-grid';
+        
+        const availableTimes = allTimes.filter(t => !bookedTimes.includes(t));
+
+        if (availableTimes.length === 0) {
+            timesContainer.innerHTML = "<strong>All times are currently booked.</strong>";
+            timesContainer.className = '';
+            return;
+        }
+
+        availableTimes.forEach(time => {
+            const btn = document.createElement('div');
+            btn.className = 'time-slot';
+            btn.innerText = time;
+            
+            if (selectedTime === time) btn.classList.add('selected');
+
+            btn.onclick = () => {
+                selectedTime = time;
+                renderTimes(); 
+                checkForm();
+            };
+            timesContainer.appendChild(btn);
+        });
+    }
+
+    function checkForm() {
+        const name = document.getElementById('studentName').value;
+        const num = document.getElementById('studentNumber').value;
+        const email = document.getElementById('studentEmail').value;
+        submitBtn.disabled = !(name && num && email && selectedTime);
+    }
+
+    document.querySelectorAll('input').forEach(input => {
+        input.addEventListener('input', checkForm);
+    });
+
+    submitBtn.onclick = async () => {
+        submitBtn.disabled = true;
+        submitBtn.innerText = "Booking and sending email...";
+
+        const name = document.getElementById('studentName').value;
+        const num = document.getElementById('studentNumber').value;
+        const email = document.getElementById('studentEmail').value;
+
+        try {
+            // 2. Save to Firebase first
+            await addDoc(collection(db, "meetings"), {
+                name: name,
+                studentNumber: num,
+                email: email,
+                time: selectedTime,
+                timestamp: new Date()
+            });
+
+            // 3. Trigger EmailJS if save was successful
+            // REPLACE WITH YOUR SERVICE ID AND TEMPLATE ID
+            await emailjs.send("service_x6ack7r", "template_ze6seyh", {
+                to_name: name,
+                to_email: email,
+                meeting_time: selectedTime
+            });
+
+            document.getElementById('booking-form').style.display = 'none';
+            messageDiv.style.display = 'block';
+            messageDiv.className = 'success';
+            messageDiv.innerHTML = `<strong>Success!</strong> You are booked for <strong>${selectedTime}</strong>.<br><br>A confirmation email has been sent to ${email}.`;
+            
+        } catch (e) {
+            console.error(e);
+            messageDiv.style.display = 'block';
+            messageDiv.className = 'error';
+            messageDiv.innerText = "There was an error processing your request. Please try again.";
+            submitBtn.disabled = false;
+            submitBtn.innerText = "Book Meeting";
+        }
+    };
+</script>
+</body>
+</html>
 
