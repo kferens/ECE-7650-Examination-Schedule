@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meeting Scheduler - Oct 13</title>
+    <title>ECE 3740 Project Scheduler, Oct 13 & Oct 15</title>
     <style>
         body { font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; background-color: #f4f4f9; }
         .container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
@@ -11,8 +11,8 @@
         .form-group { margin-bottom: 15px; }
         label { display: block; font-weight: bold; margin-bottom: 5px; }
         input[type="text"], input[type="email"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        .times-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; margin-top: 10px; }
-        .time-slot { padding: 10px; text-align: center; border: 1px solid #007bff; border-radius: 4px; cursor: pointer; background: white; color: #007bff; transition: 0.2s; }
+        .times-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-top: 10px; }
+        .time-slot { padding: 10px; text-align: center; border: 1px solid #007bff; border-radius: 4px; cursor: pointer; background: white; color: #007bff; transition: 0.2s; font-size: 14px; }
         .time-slot:hover { background: #007bff; color: white; }
         .time-slot.selected { background: #0056b3; color: white; border-color: #0056b3; }
         button { margin-top: 20px; width: 100%; padding: 12px; background: #28a745; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; }
@@ -22,11 +22,9 @@
         .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
     </style>
     
-    <!-- 1. Add the EmailJS script -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script type="text/javascript">
         (function() {
-            // REPLACE WITH YOUR EMAILJS PUBLIC KEY
             emailjs.init("tArVjlhPfhckQj-0B");
         })();
     </script>
@@ -34,7 +32,7 @@
 <body>
 
 <div class="container">
-    <h2>Book a Meeting - Tuesday, Oct 13</h2>
+    <h2>ECE 3740 Project Scheduler, Oct 13 & Oct 15</h2>
     
     <div id="booking-form">
         <div class="form-group">
@@ -51,7 +49,7 @@
         </div>
         
         <div class="form-group">
-            <label>Select an Available Time (10 min slots):</label>
+            <label>Select an Available Time:</label>
             <div id="times-container">Loading schedule...</div>
         </div>
 
@@ -65,7 +63,6 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
     import { getFirestore, collection, addDoc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-    // REPLACE WITH YOUR FIREBASE CONFIG
     const firebaseConfig = {
       apiKey: "AIzaSyBapsBDIlZssY-uKmAkdLoYM59i_F1LSEo",
       authDomain: "p1-3-scheduler.firebaseapp.com",
@@ -77,12 +74,18 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
+    // Times for both days included in the same array
     const allTimes = [
-        "8:00 AM", "8:15 AM", "8:30 AM", "8:45 AM", 
-        "9:00 AM", "9:15 AM", "9:30 AM", "9:45 AM",
-        "10:00 AM", "10:15 AM", "10:30 AM", "10:45 AM",
-        "11:00 AM", "11:15 AM", "11:30 AM", "11:45 AM",
-        "12:00 PM"
+        "Oct 13 - 2:30 PM", "Oct 13 - 2:40 PM", "Oct 13 - 2:50 PM", "Oct 13 - 3:00 PM", 
+        "Oct 13 - 3:10 PM", "Oct 13 - 3:20 PM", "Oct 13 - 3:30 PM", "Oct 13 - 3:40 PM", 
+        "Oct 13 - 3:50 PM", "Oct 13 - 4:00 PM", "Oct 13 - 4:10 PM", "Oct 13 - 4:20 PM", 
+        "Oct 13 - 4:30 PM", "Oct 13 - 4:40 PM", "Oct 13 - 4:50 PM", "Oct 13 - 5:00 PM", 
+        "Oct 13 - 5:10 PM", "Oct 13 - 5:20 PM",
+        "Oct 15 - 2:30 PM", "Oct 15 - 2:40 PM", "Oct 15 - 2:50 PM", "Oct 15 - 3:00 PM", 
+        "Oct 15 - 3:10 PM", "Oct 15 - 3:20 PM", "Oct 15 - 3:30 PM", "Oct 15 - 3:40 PM", 
+        "Oct 15 - 3:50 PM", "Oct 15 - 4:00 PM", "Oct 15 - 4:10 PM", "Oct 15 - 4:20 PM", 
+        "Oct 15 - 4:30 PM", "Oct 15 - 4:40 PM", "Oct 15 - 4:50 PM", "Oct 15 - 5:00 PM", 
+        "Oct 15 - 5:10 PM", "Oct 15 - 5:20 PM"
     ];
 
     let bookedTimes = [];
@@ -92,7 +95,8 @@
     const submitBtn = document.getElementById('submitBtn');
     const messageDiv = document.getElementById('message');
 
-    const q = query(collection(db, "meetings"));
+    // Updated collection name to "meetings_3740"
+    const q = query(collection(db, "meetings_3740"));
     onSnapshot(q, (snapshot) => {
         bookedTimes = [];
         snapshot.forEach((doc) => {
@@ -149,8 +153,8 @@
         const email = document.getElementById('studentEmail').value;
 
         try {
-            // 2. Save to Firebase first
-            await addDoc(collection(db, "meetings"), {
+            // Updated collection name to "meetings_3740"
+            await addDoc(collection(db, "meetings_3740"), {
                 name: name,
                 studentNumber: num,
                 email: email,
@@ -158,8 +162,6 @@
                 timestamp: new Date()
             });
 
-            // 3. Trigger EmailJS if save was successful
-            // REPLACE WITH YOUR SERVICE ID AND TEMPLATE ID
             await emailjs.send("service_x6ack7r", "template_ze6seyh", {
                 to_name: name,
                 to_email: email,
@@ -183,4 +185,3 @@
 </script>
 </body>
 </html>
-
